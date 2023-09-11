@@ -25,7 +25,7 @@ std = audio_array.std()
 audio_array = (audio_array - mean) / std
 
 # Take 1000 samples of the audio signal 
-#audio_array = audio_array[10000:11000]
+audio_array = audio_array[0:5000]
 
 # Show a plot of the audio signal
 plt.plot(audio_array)
