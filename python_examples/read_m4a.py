@@ -8,8 +8,7 @@ from pydub.utils import mediainfo
 import matplotlib.pyplot as plt
 import numpy as np
 
-# path = "/home/casper/radar_course/data/Range_Test_File.m4a"
-path = "/home/casper/radar_course/data/Velocity_Test_File.m4a"
+path = "data_cots/Velocity_Test_File.m4a"
 
 # Read m4a file
 audio = AudioSegment.from_file(path, format="m4a")
