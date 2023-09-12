@@ -18,20 +18,34 @@ Sample_per_sweep=Tp/T;
 M = N/Sample_per_sweep;
 
 %Creating a 2D array
-First_array = zeros(round(M),Sample_per_sweep+4*length(N));
+First_array = zeros(round(M)-1,Sample_per_sweep+4*Sample_per_sweep);
 
 %Variable to keep track of each sample
 k = 1;
-for i = 1:M
-    for j = 1:Sample_per_sweep
-        First_array(i,j) = audioData_inv(k);
-        k = k+1;
-    end
+velocities = linspace(0,sampleRate/2, 2*Sample_per_sweep);
+velocities = velocities * (3*10^8)/(2 * 2.43 * 10^9);
 
-    First_array(i,j)
-    %hello
+timearray = linspace(0,Tp*round(M)-1,round(M)-1);
+round(M)
+audioData_inv = reshape(audioData_inv(1:1900710), [Sample_per_sweep, round(M)-1]);
+First_array(:, 1:Sample_per_sweep) = audioData_inv';
 
-end
+
+First_array(:,1:Sample_per_sweep) = First_array(:,1:Sample_per_sweep) - mean(First_array(:,1:Sample_per_sweep));
+figure(2)
+fftfirst = 10*log10(abs(fft(First_array,5*Sample_per_sweep,2)));
+fftfirst = fftfirst(:,1:Sample_per_sweep*2);
+maxall = max(fftfirst, [], 'all');
+fftfirst = fftfirst - maxall;
+imagesc(velocities, timearray, fftfirst,[-30 0])
+xlim([0 30])
+
+
+
+
+
+
+
 
 
 
