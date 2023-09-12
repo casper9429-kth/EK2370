@@ -25,19 +25,23 @@ k = 1;
 velocities = linspace(0,sampleRate/2, 2*Sample_per_sweep);
 velocities = velocities * (3*10^8)/(2 * 2.43 * 10^9);
 
-timearray = linspace(0,Tp*round(M)-1,round(M)-1);
+timearray = linspace(0,Tp*(round(M)-1),round(M)-1);
 round(M)
 audioData_inv = reshape(audioData_inv(1:1900710), [Sample_per_sweep, round(M)-1]);
 First_array(:, 1:Sample_per_sweep) = audioData_inv';
 
-
-First_array(:,1:Sample_per_sweep) = First_array(:,1:Sample_per_sweep) - mean(First_array(:,1:Sample_per_sweep));
+%clutter rej
+%First_array(:,1:Sample_per_sweep) = First_array(:,1:Sample_per_sweep) - mean(First_array(:,1:Sample_per_sweep));
 figure(2)
-fftfirst = 10*log10(abs(fft(First_array,5*Sample_per_sweep,2)));
+fftfirst = 10*log10(abs(fft(First_array,4*Sample_per_sweep,2)));
 fftfirst = fftfirst(:,1:Sample_per_sweep*2);
+%Norm1
 maxall = max(fftfirst, [], 'all');
 fftfirst = fftfirst - maxall;
-imagesc(velocities, timearray, fftfirst,[-30 0])
+%Norm2
+%maxrows = max(fftfirst,[], 2);
+%fftfirst = fftfirst - maxrows;
+imagesc(velocities, timearray, fftfirst,[-20 0])
 xlim([0 30])
 
 
