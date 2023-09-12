@@ -16,30 +16,14 @@ audio_array = audio.get_array_of_samples().tolist()
 audio_array = np.array(audio_array)
 
 
-# Time constants
-T_p = 0.02 # s
-# Calculate samples devided by time to get sample rate
-sample_rate = int(len(audio_array)/audio.duration_seconds)
-# Maximum frequency due to nyquist
-f_max = sample_rate/2
-# Timer per sample
-t_p = 1/sample_rate
 
 
 # Convolute signal with a window of 45 samples centered at sample 23
 kernal = np.array([x[0] for x in cv2.getGaussianKernel(45, 23)])
 audio_array_mean = np.convolve(audio_array, kernal, mode='same')
-audio_array_without_sync = audio_array - audio_array_mean
-
-
 
 # Find the zero crossings of the audio signal
 zero_crossings = np.where(np.diff(np.sign(audio_array_mean)))[0]
-
-# # Draw the signal with zero crossings
-# plt.plot(((audio_array[5000:15000]-np.mean(audio_array[5000:15000]))/np.std(audio_array)))
-# plt.plot(np.diff(np.sign(audio_array_mean))[5000:15000])         
-# plt.show()
 
 # How many elements are in each row
 kernal = [-1, 1]
@@ -56,56 +40,56 @@ range_img = np.zeros((num_rows,8*max_dist))
 for i in range(num_rows):
     start = zero_crossings[2*i+1]
     end = zero_crossings[2*i+2]
-    safty_margin = 0
-    range_img[i,0:end-start] = -audio_array_without_sync[start:end]#-(audio_array[start+safty_margin:end-safty_margin]-mean)/std
-    # Create a time array
+    #median = np.median(audio_array[start:end])
+    #std = np.std(audio_array[start:end])
+    #range_img[i,0:end-start] = -(audio_array[start:end]-median)/std
+    range_img[i,0:end-start] = -audio_array[start:end]#-(audio_array[start+safty_margin:end-safty_margin]-mean)/std
 
-
-# # Show range image
-# plt.imshow(range_img)
-# plt.show()
-
-
-
-
-
-
+# Peform MTI
+# Subtract the previous row from the current row
+# for i in range(1,num_rows):
+#     range_img[i,:] = range_img[i,:] - range_img[i-1,:]
+# for i in range(1,num_rows):
+#     range_img[i,:] = range_img[i,:] - range_img[i-1,:]
 
 
 
 
-# Flatten range image
-# range_img = range_img.flatten()
-# # Plot the range image
-# plt.plot(range_img[5000:15000])
-# plt.show()
+    
 
-
-#freq = np.fft.fftfreq(range_img.shape[1], d=t_p)
     
 # Take fft of each row of the image
-img_fft = np.fft.ifft(range_img, axis=1)
-
-
+img_fft = np.fft.fft(range_img, axis=1)
 
 # Take the absolute value of the fft
 img_fft = np.abs(img_fft)
 
 # Take the log of the fft
-img_fft = 20*np.log(img_fft)
+img_fft = np.log(img_fft)
+
+# Take the mean of each col of the fft and subtract it from each row
+mean = np.mean(img_fft, axis=0)
+img_fft = img_fft - mean
+
+
 
 # Scale each row of the fft to 0-255
-img_fft = img_fft - np.min(img_fft, axis=1)[:,None]
-img_fft = img_fft / np.max(img_fft, axis=1)[:,None]
+# Find the 5th and 95th percentile of each row
+# and scale the row to 0-255
+min = np.percentile(img_fft, 1, axis=1)
+max = np.percentile(img_fft, 99, axis=1)
+img_fft = (img_fft-min[:,None])/(max[:,None]-min[:,None])
+
+
+# img_fft = img_fft - np.min(img_fft, axis=1)[:,None]
+# img_fft = img_fft / np.max(img_fft, axis=1)[:,None]
 
 # Scale the fft to 0-255 and convert to uint8
 img_fft = (img_fft*255).astype(np.uint8)
 
 # Color encode the fft 
-img_fft = cv2.applyColorMap(img_fft, cv2.COLORMAP_PLASMA)
+img_fft = cv2.applyColorMap(img_fft, cv2.COLORMAP_JET)
  
-# Take real part up to nyquist frequency
-img_fft = img_fft[:,int(img_fft.shape[1]/2):-int(img_fft.shape[1]/4)]
 
 # # Show the image of the fft using matplotlib
 plt.imshow(img_fft)
