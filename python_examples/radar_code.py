@@ -40,39 +40,62 @@ def main():
     upchirp_matrix = two_pulse_MTI(upchirp_matrix)
 
     # Perform 2D FFT
-    upchirp_matrix = ifft2d(upchirp_matrix,padding_constant,Nsamples)
+    upchirp_matrix = ifft_with_filtering(upchirp_matrix,padding_constant,Nsamples)
+    min_X = np.min(upchirp_matrix)
+    max_X = np.max(upchirp_matrix)
+    upchirp_matrix = (upchirp_matrix - min_X)/(max_X - min_X)*255
+
+    # Convert to uint8
+    upchirp_matrix = upchirp_matrix.astype(np.uint8)
     
-    # Plot
-    plt.imshow(upchirp_matrix)
-    plt.show()
+    # # Make contrast better
+    # upchirp_matrix = cv2.equalizeHist(upchirp_matrix)
     
+    # upchirp_matrix = cv2.cvtColor(upchirp_matrix,cv2.COLOR_GRAY2RGB)
+    # # Find edges using canny
+    # edges = cv2.Canny(upchirp_matrix,100,200)
+    # # Peform adaptive thresholding
+
+    
+    # Show image using cv2
+    cv2.imshow("Image",upchirp_matrix)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+        
 
 
-def ifft2d(upchirp_matrix,Padding,Nsamples):
+def ifft_with_filtering(upchirp_matrix,Padding,Nsamples):
     """
-    Perform 2D ifft
+    Perform ifft along rows and filter 
     """
     # Ifft
     ifft = np.fft.ifft(upchirp_matrix,axis=1,n=Padding*Nsamples)
     
     # Absolute value
     ifft = np.abs(ifft)
+
+    # Cut away padding
+    ifft = ifft[:,:Nsamples]
+
+    # Convolute with a aggressive gaussian filter
+    kernel = cv2.getGaussianKernel(30,30)
+    ifft = cv2.filter2D(ifft,-1,kernel)
+
+
+    # Find 5 prcentile and 95 percentile
+    min_X = np.percentile(ifft, 90)
+    max_X = np.percentile(ifft, 99.999)
+    # Set values below 5 percentile to 5 percentile
+    ifft[ifft < min_X] = min_X
+    # Set values above 95 percentile to 95 percentile
+    ifft[ifft > max_X] = max_X
+    
     
     # Logarithmic scale
-    ifft = 20*np.log10(ifft)
+    ifft = np.log10(ifft)
     
-    # Cut away padding
-    ifft = ifft[:,:2*Nsamples]
     
-    # Remove noise floor
-    min_X = np.percentile(ifft, 90)
-    max_X = np.percentile(ifft, 99)
-    ifft[ifft < min_X] = min_X
-    ifft[ifft > max_X] = max_X
-    # Scale to 8 bit
-    ifft = (ifft - min_X)/(max_X - min_X)*255
-    # Transform to uint8
-    ifft = ifft.astype(np.uint8)
+    # Scale min and max to 0 and 255
     return ifft
     
 
