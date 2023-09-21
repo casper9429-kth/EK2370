@@ -18,7 +18,7 @@ Sample_per_sweep=Tp/T;
 M = N/Sample_per_sweep;
 
 %Creating a 2D array
-First_array = zeros(round(M)-1,Sample_per_sweep+5*Sample_per_sweep);
+First_array = zeros(round(M)-1,Sample_per_sweep);
 
 %Variable to keep track of each sample
 k = 1;
