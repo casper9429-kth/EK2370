@@ -57,12 +57,15 @@ def main():
     # # Peform adaptive thresholding
 
     
-    # Show image using cv2
+    # Color map
+    upchirp_matrix = cv2.applyColorMap(upchirp_matrix, cv2.COLORMAP_JET)
+    
+    
+    # Show image
     cv2.imshow("Image",upchirp_matrix)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-        
-
+    
 
 def ifft_with_filtering(upchirp_matrix,Padding,Nsamples):
     """
@@ -83,8 +86,10 @@ def ifft_with_filtering(upchirp_matrix,Padding,Nsamples):
 
 
     # Find 5 prcentile and 95 percentile
-    min_X = np.percentile(ifft, 90)
-    max_X = np.percentile(ifft, 99.999)
+    min_X = np.percentile(ifft, 1)
+    #max_X = np.percentile(ifft, 99.999)
+    max_X = np.percentile(ifft, 99.9)
+
     # Set values below 5 percentile to 5 percentile
     ifft[ifft < min_X] = min_X
     # Set values above 95 percentile to 95 percentile
