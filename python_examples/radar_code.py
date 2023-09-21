@@ -48,6 +48,13 @@ def main():
     # Convert to uint8
     upchirp_matrix = upchirp_matrix.astype(np.uint8)
     
+    # # Take derivative of upchirp matrix using cv2
+    # kernel = np.array([[-1,-1,-1],[0,0,0],[1,1,1]])
+    # upchirp_matrix = cv2.filter2D(upchirp_matrix,-1,kernel)
+    
+    
+    
+    
     # # Make contrast better
     # upchirp_matrix = cv2.equalizeHist(upchirp_matrix)
     
@@ -58,6 +65,10 @@ def main():
 
     
     # Color map
+    # Scale iamge to 0-255
+    # upchirp_matrix = (upchirp_matrix - np.min(upchirp_matrix))/(np.max(upchirp_matrix) - np.min(upchirp_matrix))*255
+    # upchirp_matrix = upchirp_matrix.astype(np.uint8)
+    
     upchirp_matrix = cv2.applyColorMap(upchirp_matrix, cv2.COLORMAP_JET)
     
     
