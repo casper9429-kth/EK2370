@@ -1,5 +1,5 @@
 % Define the file path to your audio file
-filePath = 'Velocity_Test_File.m4a';
+filePath = 'Rayan_run.m4a';
 
 % Read the audio file and get the audio data and sampling rate
 [audioData, sampleRate] = audioread(filePath);
@@ -34,7 +34,7 @@ First_array(:, 1:Sample_per_sweep) = audioData_inv';
 %clutter rej
 First_array(:,1:Sample_per_sweep) = First_array(:,1:Sample_per_sweep) - mean(First_array(:,1:Sample_per_sweep),"all");
 figure(2)
-fftfirst = 10*log10(abs(fft(First_array,5*Sample_per_sweep,2)));
+fftfirst = 10*log10(abs(fft(First_array,5*Sample_per_sweep,2))); %zeropadding
 fftfirst = fftfirst(:,1:Sample_per_sweep*2);
 %Norm1
 %maxall = max(fftfirst, [], 'all');
@@ -42,7 +42,7 @@ fftfirst = fftfirst(:,1:Sample_per_sweep*2);
 %Norm2
 maxrows = max(fftfirst,[], 2);
 fftfirst = fftfirst - maxrows;
-imagesc(velocities, timearray, fftfirst,[-20 0])
+imagesc(velocities, timearray, fftfirst,[-10 0])
 xlim([0 30])
 
 

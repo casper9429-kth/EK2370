@@ -71,6 +71,8 @@ def main():
     
     upchirp_matrix = cv2.applyColorMap(upchirp_matrix, cv2.COLORMAP_JET)
     
+    # Downsample
+    
     
     # Show image
     cv2.imshow("Image",upchirp_matrix)
