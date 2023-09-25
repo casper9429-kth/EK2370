@@ -8,9 +8,16 @@ import cv2
 
 def main():
     # Define Path
-    path = "data_cots/Range_Test_File.m4a"
+    path = "data_cots/casper_idioten.m4a"
+
     # Get data, sync and fs
     data,sync,fs = read_data_sync_fs(path)
+
+    # # Only save last 1/4
+    data = data[-int(len(data)/1.01):]
+    sync = sync[-int(len(sync)/1.01):]
+    
+
     # Constants
     c = 3e8;                # speed of light [m/s]
     Ts = 1/fs;              # sampling time [s]
@@ -18,7 +25,7 @@ def main():
     fc = 2.43e9;            # center frequency [hz]
     Nsamples = int(Tp*fs);       # number of samples per puls
     BW = (2.495e9 - 2.408e9); # bandwidth of FMCW [Hz]
-    padding_constant = 4;   # padding constant for the FFT
+    padding_constant = 10#4;   # padding constant for the FFT
 
 
     # Extract upchirp indicies, it is where sync goes from negative to positive
@@ -33,54 +40,30 @@ def main():
     # Create upchirp matrix
     upchirp_matrix = create_upchirp_matrix(data,upchirp_indicies,Nsamples)
     
+    
+    
     # Peform MS clutter removal
     upchirp_matrix = MS_Clutter_removal(upchirp_matrix)
     
     # Perform MTI
-    upchirp_matrix = two_pulse_MTI(upchirp_matrix)
+    upchirp_matrix = three_pulse_MTI(upchirp_matrix)
 
     # Perform 2D FFT
     upchirp_matrix = ifft_with_filtering(upchirp_matrix,padding_constant,Nsamples)
-    min_X = np.min(upchirp_matrix)
-    max_X = np.max(upchirp_matrix)
-    upchirp_matrix = (upchirp_matrix - min_X)/(max_X - min_X)*255
-
-    # Convert to uint8
-    upchirp_matrix = upchirp_matrix.astype(np.uint8)
     
-    # # Take derivative of upchirp matrix using cv2
-    # kernel = np.array([[-1,-1,-1],[0,0,0],[1,1,1]])
-    # upchirp_matrix = cv2.filter2D(upchirp_matrix,-1,kernel)
+    # Plt image
+    plt.imshow(upchirp_matrix)
+    # Add colorbar
+    plt.colorbar()
+    # Add min value and max value
+    print("Min: "+str(np.min(upchirp_matrix)))
+    print("Max: "+str(np.max(upchirp_matrix)))
     
-    
-    
-    
-    # # Make contrast better
-    # upchirp_matrix = cv2.equalizeHist(upchirp_matrix)
-    
-    # upchirp_matrix = cv2.cvtColor(upchirp_matrix,cv2.COLOR_GRAY2RGB)
-    # # Find edges using canny
-    # edges = cv2.Canny(upchirp_matrix,100,200)
-    # # Peform adaptive thresholding
-
-    
-    # Color map
-    # Scale iamge to 0-255
-    # upchirp_matrix = (upchirp_matrix - np.min(upchirp_matrix))/(np.max(upchirp_matrix) - np.min(upchirp_matrix))*255
-    # upchirp_matrix = upchirp_matrix.astype(np.uint8)
-    
-    upchirp_matrix = cv2.applyColorMap(upchirp_matrix, cv2.COLORMAP_JET)
-    
-    
-    # Show image
-    cv2.imshow("Image",upchirp_matrix)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-    
+    plt.show()
 
 def ifft_with_filtering(upchirp_matrix,Padding,Nsamples):
     """
-    Perform ifft along rows and filter 
+    Perform ifft along rows 
     """
     # Ifft
     ifft = np.fft.ifft(upchirp_matrix,axis=1,n=Padding*Nsamples)
@@ -91,29 +74,43 @@ def ifft_with_filtering(upchirp_matrix,Padding,Nsamples):
     # Cut away padding
     ifft = ifft[:,:Nsamples]
 
-    # Convolute with a aggressive gaussian filter
-    kernel = cv2.getGaussianKernel(30,30)
-    ifft = cv2.filter2D(ifft,-1,kernel)
-
-
-    # Find 5 prcentile and 95 percentile
-    min_X = np.percentile(ifft, 1)
-    #max_X = np.percentile(ifft, 99.999)
-    max_X = np.percentile(ifft, 99.9)
-
-    # Set values below 5 percentile to 5 percentile
-    ifft[ifft < min_X] = min_X
-    # Set values above 95 percentile to 95 percentile
-    ifft[ifft > max_X] = max_X
+    # 
     
     
     # Logarithmic scale
     ifft = np.log10(ifft)
     
+    # Cut away negative values
+    ifft[ifft < 0] = 0
+    # Scale ifft to 0 and 255 and transform to uint8
+    ifft = (ifft/np.max(ifft)*255).astype(np.uint8)
+    
+    new_ifft = np.zeros_like(ifft)
+    for i in range(ifft.shape[0]):
+        row = ifft[i,:]
+        # Scale min and max to 0 and 255
+        min_X = np.percentile(row,50)    # np.min(row)
+        max_X = np.percentile(row,99.99)# np.max(row)
+        row[row < min_X] = min_X
+        row[row > max_X] = max_X
+        row = (row - min_X)/(max_X - min_X)*255
+        new_ifft[i,:] = row
+    ifft = new_ifft
+        
+        
+    # Column kernel
+    #kernel = np.ones((16,2))/(16*2)
+    # Convolute with a aggressive gaussian filter
+    #ifft = cv2.filter2D(ifft,-1,kernel)
+    
+    # Apply median filter on image ifft
+    #ifft = cv2.medianBlur(ifft,10)
+
     
     # Scale min and max to 0 and 255
     return ifft
     
+
 
 def two_pulse_MTI(upchirp_matrix):    
     ### Subtract the previous chirp(row) from the current chirp (row)
@@ -121,9 +118,15 @@ def two_pulse_MTI(upchirp_matrix):
     S_2pulse[1:,:] = upchirp_matrix[1:,:] - upchirp_matrix[:-1,:] 
     return S_2pulse
 
+def three_pulse_MTI(upchirp_matrix):
+    S_3pulse = np.zeros_like(upchirp_matrix)
+    S_3pulse[2:,:] = upchirp_matrix[2:,:] - 2*upchirp_matrix[1:-1,:] + upchirp_matrix[:-2,:]
+    return S_3pulse
+
 def MS_Clutter_removal(upchirp_matrix):
     mean = np.mean(upchirp_matrix,axis=0)
     upchirp_matrix = upchirp_matrix - mean
+    
     return upchirp_matrix
 
 def create_upchirp_matrix(data,upchirp_indicies,Nsamples):
