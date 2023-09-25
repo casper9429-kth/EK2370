@@ -1,5 +1,5 @@
 % Define the file path to your audio file
-filePath = 'Rayan_run.m4a';
+filePath = 'erik_ray_hybrid.m4a';
 
 % Read the audio file and get the audio data and sampling rate
 [audioData, sampleRate] = audioread(filePath);
@@ -40,9 +40,12 @@ fftfirst = fftfirst(:,1:Sample_per_sweep*2);
 %maxall = max(fftfirst, [], 'all');
 %fftfirst = fftfirst - maxall;
 %Norm2
-maxrows = max(fftfirst,[], 2);
-fftfirst = fftfirst - maxrows;
-imagesc(velocities, timearray, fftfirst,[-10 0])
+%maxrows = max(fftfirst,[], 2);
+%fftfirst = fftfirst - maxrows;
+%Norm3
+maxrows = maxk(fftfirst,2,2);
+fftfirst = fftfirst - maxrows(:,2);
+imagesc(velocities, timearray, fftfirst,[-25 0])
 xlim([0 30])
 
 
