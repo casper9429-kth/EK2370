@@ -8,7 +8,7 @@ import cv2
 
 def main():
     # Define Path
-    path = "data_cots/casper_idioten.m4a"
+    path = "data_cots/oden_casper_promenad_fmcw.m4a"
 
     # Get data, sync and fs
     data,sync,fs = read_data_sync_fs(path)
@@ -89,12 +89,15 @@ def ifft_with_filtering(upchirp_matrix,Padding,Nsamples):
     for i in range(ifft.shape[0]):
         row = ifft[i,:]
         # Scale min and max to 0 and 255
-        min_X = np.percentile(row,50)    # np.min(row)
-        max_X = np.percentile(row,99.99)# np.max(row)
+        min_X = np.percentile(row,10)    # np.min(row)
+        max_X = np.percentile(row,80)# np.max(row)
+        min_X = np.min(row)
+        max_X = np.max(row)
         row[row < min_X] = min_X
         row[row > max_X] = max_X
         row = (row - min_X)/(max_X - min_X)*255
         new_ifft[i,:] = row
+        
     ifft = new_ifft
         
         
