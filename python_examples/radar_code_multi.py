@@ -8,7 +8,7 @@ import cv2
 
 def main():
     # Define Path
-    path = "data_cots/oden_casper_promenad_fmcw.m4a"
+    path = "python_examples/outdoor_measurement_casper_oden.m4a"
 
     # Get data, sync and fs
     data,sync,fs = read_data_sync_fs(path)
@@ -24,8 +24,8 @@ def main():
     Tp = 0.02;              # pulse width [s]
     fc = 2.43e9;            # center frequency [hz]
     Nsamples = int(Tp*fs);       # number of samples per puls
-    BW = (2.495e9 - 2.408e9); # bandwidth of FMCW [Hz]
-    padding_constant = 10#4;   # padding constant for the FFT
+    BW = (2.4e9 - 2.5e9); # bandwidth of FMCW [Hz]
+    padding_constant = 4#4;   # padding constant for the FFT
 
 
     # Extract upchirp indicies, it is where sync goes from negative to positive
@@ -70,11 +70,6 @@ def ifft_with_filtering(upchirp_matrix,Padding,Nsamples):
     
     # Absolute value
     ifft = np.abs(ifft)
-
-    # Cut away padding
-    ifft = ifft[:,:Nsamples]
-
-    # 
     
     
     # Logarithmic scale
@@ -82,33 +77,7 @@ def ifft_with_filtering(upchirp_matrix,Padding,Nsamples):
     
     # Cut away negative values
     ifft[ifft < 0] = 0
-    # Scale ifft to 0 and 255 and transform to uint8
-    ifft = (ifft/np.max(ifft)*255).astype(np.uint8)
     
-    new_ifft = np.zeros_like(ifft)
-    for i in range(ifft.shape[0]):
-        row = ifft[i,:]
-        # Scale min and max to 0 and 255
-        min_X = np.percentile(row,10)    # np.min(row)
-        max_X = np.percentile(row,80)# np.max(row)
-        min_X = np.min(row)
-        max_X = np.max(row)
-        row[row < min_X] = min_X
-        row[row > max_X] = max_X
-        row = (row - min_X)/(max_X - min_X)*255
-        new_ifft[i,:] = row
-        
-    ifft = new_ifft
-        
-        
-    # Column kernel
-    #kernel = np.ones((16,2))/(16*2)
-    # Convolute with a aggressive gaussian filter
-    #ifft = cv2.filter2D(ifft,-1,kernel)
-    
-    # Apply median filter on image ifft
-    #ifft = cv2.medianBlur(ifft,10)
-
     
     # Scale min and max to 0 and 255
     return ifft
