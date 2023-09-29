@@ -4,6 +4,7 @@ from pydub import AudioSegment
 from pydub.utils import mediainfo
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy.interpolate
 import cv2
 import scipy.signal
 
@@ -12,7 +13,9 @@ def main():
     
     # Get data, sync and fs
     data,sync,fs = read_data_sync_fs(path)
-
+    # data and sync inv
+    data = -data
+    sync = -sync
 
     # Constants
     c = 3e8;                # speed of light [m/s]
@@ -23,7 +26,9 @@ def main():
     Tp = 0.02;              # pulse width [s]
     fc = 2.43e9;            # center frequency [hz]
     Nsamples = int(Tp*fs);       # number of samples per puls
-    BW = (2.495e9 - 2.408e9); # bandwidth of FMCW [Hz]
+    fstart = 2.408e9
+    fend = 2495e9
+    BW = np.abs(fstart - fend); # bandwidth of FMCW [Hz]
     padding_constant = 4;   # padding constant for the FFT
 
     # Find all indicies where a chirp starts
@@ -100,7 +105,7 @@ def main():
     data_matrix_integrated_hillbert = das_hillbert_transform(data_matrix_integrated,1)
 
     # Plot first row
-    plt.plot(data_matrix_integrated_hillbert[0,:])
+    #plt.plot(data_matrix_integrated_hillbert[0,:])
     
     # Apply han windows to row
     data_matrix_integrated_hillbert = np.hanning(data_matrix_integrated_hillbert.shape[1])*data_matrix_integrated_hillbert
@@ -109,13 +114,52 @@ def main():
     data_matrix_integrated_hillbert_to_be_padded = np.zeros((data_matrix_integrated_hillbert.shape[0]+1012*2,data_matrix_integrated_hillbert.shape[1]))
     data_matrix_integrated_hillbert_to_be_padded[1012:-1012,:] = data_matrix_integrated_hillbert
     data_matrix_integrated_hillbert_padded = data_matrix_integrated_hillbert_to_be_padded
-    
+    #data_matrix_integrated_hillbert_padded = data_matrix_integrated_hillbert
     
     # Apply fft along columns, fftshift along comums
     data_matrix_integrated_hillbert_fft = np.fft.fftshift(np.fft.fft(data_matrix_integrated_hillbert_padded,axis=0),axes=0)
 
+    # Calculate K_r vector 
+    length_k_r = data_matrix_integrated_hillbert_fft.shape[1]
+    k_start = 4*np.pi*fstart/c
+    k_end = 4*np.pi*fend/c
+    K_r = np.linspace(k_start,k_end,length_k_r)
 
+    # Create K_y_matrix
+    K_y_matrix = np.sqrt(data_matrix_integrated_hillbert_fft - K_r) 
 
+    # Find min value in each row
+    ## Find min and max
+    K_ye = np.linspace(np.min(K_y_matrix),np.max(K_y_matrix),int(K_y_matrix.shape[0]/2))
+    
+    # Interpolate matrix using stolzinterpolation
+    
+    
+def stolt_interpolation(K_y_matrix, K_ye):
+    """
+    Perform Stolt interpolation on K_y_matrix.
+
+    Parameters:
+    - K_y_matrix: numpy array
+        The input K_y matrix.
+    - K_ye: numpy array
+        The K_y values at which interpolation is desired.
+
+    Returns:
+    - interpolate_matrix: numpy array
+        The result of Stolt interpolation.
+    """
+    # Initialize an array for the interpolated values
+    interpolate_matrix = np.zeros((K_y_matrix.shape[0], len(K_ye)))
+
+    # Iterate through each row of K_y_matrix and perform interpolation
+    for i in range(K_y_matrix.shape[0]):
+        # Perform linear interpolation using scipy's interp1d
+        interpolate_func = scipy.interpolate.interp1d(K_y_matrix[i, :], K_ye, kind='linear', fill_value="extrapolate")
+        interpolate_matrix[i, :] = interpolate_func(K_ye)
+
+    return interpolate_matrix
+    
 def das_hillbert_transform(matrix,axis,rep_nan=1e-30):
     """
     Perform hilbert transform on matrix along axis and setting nan values to 1e-3
