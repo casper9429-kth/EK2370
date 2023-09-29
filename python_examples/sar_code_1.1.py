@@ -5,7 +5,7 @@ from pydub.utils import mediainfo
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
-
+import scipy.signal
 
 def main():
     path = "data_cots/SAR_Test_File.m4a"
@@ -19,6 +19,7 @@ def main():
     Ts = 1/fs;              # sampling time [s]
     Trp = 0.5;              # Position update time [s] Trp>0.25 (lec 5,slide 32)
     Nrp=int(Trp*fs);        # Number of samples per position update
+    Np = int(0.02*fs)       # Number of samples per upchirp
     Tp = 0.02;              # pulse width [s]
     fc = 2.43e9;            # center frequency [hz]
     Nsamples = int(Tp*fs);       # number of samples per puls
@@ -51,11 +52,13 @@ def main():
 
     # Remove the first Nrp/chirp_dist chirps for safety reasons
     chrips_to_remove = int(Nrp/chirp_dist)
+    chirps_to_save = chrips_to_remove
     nr_pos = len(pos_indicies)
     
     # Create a matrix to house all the data
     data_matrix = np.zeros((nr_pos,Nrp))
     sync_matrix = np.zeros((nr_pos,Nrp))
+    data_matrix_integrated = np.zeros((nr_pos,Np))
         
     # Iter through all rows and fill sync matrix and data matrix
     for i in range(nr_pos):
@@ -68,25 +71,64 @@ def main():
         # If the sync at index is negative, then the sync at index+1 is positive
         start_index = chirp_indicies[index] # This should correspond to the right amount of samples to remove
         if sync_clean[start_index] > 0.5:
-            start_index = chirp_indicies[index+1]
-        
-        #start_index = chirp_indicies[np.where(chirp_indicies == pos_index)[0][0]+2*chrips_to_remove] # This should correspond to the right amount of samples to remove
+            index = index+1
+            start_index = chirp_indicies[index]
+            
+        # Create a matrix of all positive chirps added to each other
+        # number of chirps
+        # samples per chirp
+        row_mat= np.zeros((chirps_to_save,Np))
+        # Add every second chirp to row_mat starting at index
+        for j in range(chirps_to_save):
+            ind = index+j*2
+            row_mat[j,:] = data[chirp_indicies[ind]:chirp_indicies[ind]+Np]
+        # Sum all chirps together
+        row_mat = np.mean(row_mat,axis=0) 
+        data_matrix_integrated[i,:] = row_mat       
 
+        
         # Fill in data_matrix with data and sync_matrix with data
         data_matrix[i,:] = data[start_index:start_index+Nrp]
         sync_matrix[i,:] = sync_clean[start_index:start_index+Nrp]
-        plt.plot(data_matrix[i,:])
-        #plt.plot(sync_matrix[i,:])
-        plt.show()
-    
-
-
-
-
-        
+        # plt.plot(data_matrix[i,:Np])
+        # plt.plot(data_matrix_integrated[i,:])
+        # plt.plot(sync_matrix[i,:])
+        # plt.show()
         
     
+    # Peform das hillbert transform on data_matrix_integrated
+    data_matrix_integrated_hillbert = das_hillbert_transform(data_matrix_integrated,1)
+    pass
+
+
+
+
+def das_hillbert_transform(matrix,axis,rep_nan=1e-30):
+    """
+    Perform hilbert transform on matrix along axis and setting nan values to 1e-3
+    """        
+    # # Peform fft on matrix along axis
+    # fft = np.fft.fft(matrix,axis=axis)
+
+    # # Save positive frequencies of fft
+    # fft = np.fft.fftshift(fft,axes=axis)
     
+    # # Remove negative frequencies
+    # if axis == 0:
+    #     fft = fft[int(fft.shape[0]/2):,:]
+    # else:
+    #     fft = fft[:,int(fft.shape[1]/2):]        
+
+    # # Replace NaN with rep_nan
+    # fft[np.isnan(fft)] = rep_nan
+
+    # return fft
+    
+    # Use scipy
+    hilbert = scipy.signal.hilbert(matrix,axis=axis)
+    # Replace nan values by rep_nan
+    hilbert[np.isnan(hilbert)] = rep_nan
+    return hilbert
 
 
 
