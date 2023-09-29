@@ -1,5 +1,5 @@
-% Define the file path to your audio file
-filePath = 'erik_ray_hybrid.m4a';
+    % Define the file path to your audio file
+filePath = 'superreflect.m4a';
 
 % Read the audio file and get the audio data and sampling rate
 [audioData, sampleRate] = audioread(filePath);
@@ -40,13 +40,30 @@ fftfirst = fftfirst(:,1:Sample_per_sweep*2);
 %maxall = max(fftfirst, [], 'all');
 %fftfirst = fftfirst - maxall;
 %Norm2
-%maxrows = max(fftfirst,[], 2);
-%fftfirst = fftfirst - maxrows;
-%Norm3
-maxrows = maxk(fftfirst,2,2);
-fftfirst = fftfirst - maxrows(:,2);
-imagesc(velocities, timearray, fftfirst,[-25 0])
+maxrows = max(fftfirst,[], 2);
+fftfirst1 = fftfirst - maxrows;
+%fftfirst1 = medfilt2(fftfirst1);
+figure(1)
+imagesc(velocities, timearray, fftfirst1,[-10 0])
 xlim([0 30])
+%Norm3
+figure(2)
+%[maxrows,i] = maxk(fftfirst,2,2);
+for i = 1:size(fftfirst,1)
+    [peaks,ind] = findpeaks(fftfirst(i,:));
+    [peakss,inds] = sort(peaks);
+    %fftfirstloop = fftfirst(i,:) - peakss(end);
+    fftfirst(i,:) = fftfirst(i,:) - peakss(end-1);
+    %fftfirst(i,inds(end-60)) = 0;
+    
+    %fftfirst(i,:) = fftfirstloop + fftfirstloop2;
+    
+end
+%fftfirst = fftfirst - maxrows(:,2);
+imgaussfilt(fftfirst,100);
+imagesc(velocities, timearray, fftfirst,[-1 0])
+xlim([0 30])
+
 
 
 
