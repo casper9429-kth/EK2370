@@ -98,8 +98,21 @@ def main():
     
     # Peform das hillbert transform on data_matrix_integrated
     data_matrix_integrated_hillbert = das_hillbert_transform(data_matrix_integrated,1)
-    pass
 
+    # Plot first row
+    plt.plot(data_matrix_integrated_hillbert[0,:])
+    
+    # Apply han windows to row
+    data_matrix_integrated_hillbert = np.hanning(data_matrix_integrated_hillbert.shape[1])*data_matrix_integrated_hillbert
+
+    # Add zero padding to data_matrix_integrated_hilbert
+    data_matrix_integrated_hillbert_to_be_padded = np.zeros((data_matrix_integrated_hillbert.shape[0]+1012*2,data_matrix_integrated_hillbert.shape[1]))
+    data_matrix_integrated_hillbert_to_be_padded[1012:-1012,:] = data_matrix_integrated_hillbert
+    data_matrix_integrated_hillbert_padded = data_matrix_integrated_hillbert_to_be_padded
+    
+    
+    # Apply fft along columns, fftshift along comums
+    data_matrix_integrated_hillbert_fft = np.fft.fftshift(np.fft.fft(data_matrix_integrated_hillbert_padded,axis=0),axes=0)
 
 
 
