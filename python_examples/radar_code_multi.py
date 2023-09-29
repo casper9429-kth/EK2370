@@ -8,12 +8,10 @@ import cv2
 
 def main():
     # Define Path
-    path = "data_cots/casper_idioten.m4a"
-
+    path = "python_examples/outdoor_measurement_casper_oden.m4a"
 
     # Get data, sync and fs
     data,sync,fs = read_data_sync_fs(path)
-
 
     # # Only save last 1/4
     data = data[-int(len(data)/1.01):]
@@ -26,61 +24,40 @@ def main():
     Tp = 0.02;              # pulse width [s]
     fc = 2.43e9;            # center frequency [hz]
     Nsamples = int(Tp*fs);       # number of samples per puls
-    BW = (2.5e9 - 2.4e9); # bandwidth of FMCW [Hz]
-    padding_constant = 10#4;   # padding constant for the FFT
+    BW = (2.4e9 - 2.5e9); # bandwidth of FMCW [Hz]
+    padding_constant = 4#4;   # padding constant for the FFT
 
 
     # Extract upchirp indicies, it is where sync goes from negative to positive
     upchirp_indicies = extract_upchrip_indicies(sync)
     
-    
     # Cancel out none upchirp samples
     data = upchrip_pass_filter(data,sync)
     
-    
     # Invert data to get the correct phase
     data = data*-1 
-
 
     # Create upchirp matrix
     upchirp_matrix = create_upchirp_matrix(data,upchirp_indicies,Nsamples)
     
     
+    
     # Peform MS clutter removal
     upchirp_matrix = MS_Clutter_removal(upchirp_matrix)
-
     
     # Perform MTI
     upchirp_matrix = three_pulse_MTI(upchirp_matrix)
 
-
     # Perform 2D FFT
     upchirp_matrix = ifft_with_filtering(upchirp_matrix,padding_constant,Nsamples)
-
     
-    #R_maxupchirp_matrix = upchirp_matrix[:,:int(Nsamples/2)]
-    d_R = c/(2*BW)
-    print("d_R: ", d_R)
-    R_max = d_R*Nsamples/2
-    # create range axis that is 40 elements long
-    
-    # Caspers cut
-    R_max = R_max/padding_constant
-    upchirp_matrix = upchirp_matrix[:,:int(upchirp_matrix.shape[1]/padding_constant)]
-
-    
+    # Plt image
     plt.imshow(upchirp_matrix)
-    plt.xticks(np.linspace(0,upchirp_matrix.shape[1],10),(np.linspace(0,R_max,10)).astype(int)*2)
-    # Add range axis to plot
-    print(np.linspace(0,upchirp_matrix.shape[1],10))
-    print(np.linspace(0,R_max,10).astype(int)*2)
-   
-    
-
-    
-    # Downsample
-    
-    
+    # Add colorbar
+    plt.colorbar()
+    # Add min value and max value
+    print("Min: "+str(np.min(upchirp_matrix)))
+    print("Max: "+str(np.max(upchirp_matrix)))
     
     plt.show()
 
@@ -93,11 +70,6 @@ def ifft_with_filtering(upchirp_matrix,Padding,Nsamples):
     
     # Absolute value
     ifft = np.abs(ifft)
-
-    # # Cut away padding
-    # ifft = ifft[:,:Nsamples]
-
-    # 
     
     
     # Logarithmic scale
@@ -105,30 +77,7 @@ def ifft_with_filtering(upchirp_matrix,Padding,Nsamples):
     
     # Cut away negative values
     ifft[ifft < 0] = 0
-    # Scale ifft to 0 and 255 and transform to uint8
-    ifft = (ifft/np.max(ifft)*255).astype(np.uint8)
     
-    new_ifft = np.zeros_like(ifft)
-    for i in range(ifft.shape[0]):
-        row = ifft[i,:]
-        # Scale min and max to 0 and 255
-        min_X = np.percentile(row,50)    # np.min(row)
-        max_X = np.percentile(row,99.99)# np.max(row)
-        row[row < min_X] = min_X
-        row[row > max_X] = max_X
-        row = (row - min_X)/(max_X - min_X)*255
-        new_ifft[i,:] = row
-    ifft = new_ifft
-    
-        
-    # Column kernel
-    #kernel = np.ones((16,2))/(16*2)
-    # Convolute with a aggressive gaussian filter
-    #ifft = cv2.filter2D(ifft,-1,kernel)
-    
-    # Apply median filter on image ifft
-    #ifft = cv2.medianBlur(ifft,10)
-
     
     # Scale min and max to 0 and 255
     return ifft
