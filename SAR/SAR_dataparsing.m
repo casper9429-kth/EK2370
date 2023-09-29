@@ -25,7 +25,29 @@ plot(syncsign);
 
 hold on
 newpositions= find(diff(transitions)>40000) +1;
+endpositions= find(diff(transitions)>40000);
 
 plot(transitions(newpositions),0, "r*");
 hold on;
 plot(transitions(1), 0, "r*")
+hold on;
+plot(transitions(endpositions),0, "r*");
+positionchanges = zeros(1, size(transitions(newpositions),1) +1)';
+positionchanges(1)= transitions(1);
+positionchanges(2:end) = transitions(newpositions);
+positionchangesend = transitions(endpositions);
+allpositionsignals = zeros(size(newpositions,1),0.5*sampleRate);
+allpositionsyncs = zeros(size(newpositions,1),0.5*sampleRate);
+
+for i = 1:size(positionchanges,1)
+if i ~= size(positionchanges,1)
+    allpositionsignals(i, :) = audioData(positionchanges(i)+0.5*sampleRate:positionchanges(i)+sampleRate-1,1);    
+    allpositionsyncs(i,:) = sync(positionchanges(i)+0.5*sampleRate:positionchanges(i)+sampleRate-1);
+end
+
+
+
+end
+
+
+%% 
