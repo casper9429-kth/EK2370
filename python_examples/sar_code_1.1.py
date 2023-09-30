@@ -14,8 +14,8 @@ def main():
     # Get data, sync and fs
     data,sync,fs = read_data_sync_fs(path)
     # data and sync inv
-    data = -data
-    sync = -sync
+    data = data
+    sync = sync
 
     # Constants
     c = 3e8;                # speed of light [m/s]
@@ -165,6 +165,8 @@ def main():
     data_matrix_integrated_hillbert_fft = np.fft.fftshift(np.fft.fft(data_matrix_integrated_hillbert_padded,axis=0),axes=0)
     # Plot phase
     plt.imshow(np.abs(data_matrix_integrated_hillbert_fft),aspect='auto')
+    plt.show()
+    plt.imshow(np.angle(data_matrix_integrated_hillbert_fft),aspect='auto')
     plt.show()
 
     
