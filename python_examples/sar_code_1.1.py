@@ -20,16 +20,15 @@ def main():
     # Constants
     c = 3e8;                # speed of light [m/s]
     Ts = 1/fs;              # sampling time [s]
-    Trp = 0.5;              # Position update time [s] Trp>0.25 (lec 5,slide 32)
+    Trp = 2.0;              # Position update time [s] Trp>0.25 (lec 5,slide 32)
     Nrp=int(Trp*fs);        # Number of samples per position update
-    Np = int(0.02*fs)       # Number of samples per upchirp
     Tp = 0.02;              # pulse width [s]
+    Np = int(Tp*fs)       # Number of samples per upchirp
     fc = 2.43e9;            # center frequency [hz]
     Nsamples = int(Tp*fs);       # number of samples per puls
     fstart = 2.408e9
     fend = 2495e9
     BW = np.abs(fstart - fend); # bandwidth of FMCW [Hz]
-    padding_constant = 4;   # padding constant for the FFT
 
     # Find all indicies where a chirp starts
     # Find indicies where the chirp starts
@@ -57,11 +56,12 @@ def main():
 
     # Remove the first Nrp/chirp_dist chirps for safety reasons
     chrips_to_remove = int(Nrp/chirp_dist)
-    chirps_to_save = chrips_to_remove
+    chirps_to_save = int(Nrp/chirp_dist)
     nr_pos = len(pos_indicies)
     
     # Create a matrix to house all the data
     data_matrix = np.zeros((nr_pos,Nrp))
+    data_matrix_no_sync = np.zeros((nr_pos,Nrp))
     sync_matrix = np.zeros((nr_pos,Nrp))
     data_matrix_integrated = np.zeros((nr_pos,Np))
         
@@ -72,7 +72,7 @@ def main():
         pos_index = pos_indicies[i]
         
         # Find index of pos_index in chirp_indicies, add chrips_to_remove to compensate for removed chirps and get the correct index
-        index = np.where(chirp_indicies == pos_index)[0][0] + 2*chrips_to_remove
+        index = np.where(chirp_indicies == pos_index)[0][0] + chrips_to_remove
         # If the sync at index is negative, then the sync at index+1 is positive
         start_index = chirp_indicies[index] # This should correspond to the right amount of samples to remove
         if sync_clean[start_index] > 0.5:
@@ -84,30 +84,75 @@ def main():
         # samples per chirp
         row_mat= np.zeros((chirps_to_save,Np))
         # Add every second chirp to row_mat starting at index
+
         for j in range(chirps_to_save):
             ind = index+j*2
             row_mat[j,:] = data[chirp_indicies[ind]:chirp_indicies[ind]+Np]
-        # Sum all chirps together
-        row_mat = np.mean(row_mat,axis=0) 
-        data_matrix_integrated[i,:] = row_mat       
-
         
-        # Fill in data_matrix with data and sync_matrix with data
-        data_matrix[i,:] = data[start_index:start_index+Nrp]
-        sync_matrix[i,:] = sync_clean[start_index:start_index+Nrp]
-        # plt.plot(data_matrix[i,:Np])
+        # # Plot all rows in row_mat
+        # for r in range(row_mat.shape[0]):
+        #     plt.plot(row_mat[r,:])
+        # Sum all chirps together
+        row_mat_mean = np.mean(row_mat,axis=0) 
+        
+        data_matrix_integrated[i,:] = row_mat_mean    
         # plt.plot(data_matrix_integrated[i,:])
-        # plt.plot(sync_matrix[i,:])
         # plt.show()
         
+        # Fill in data_matrix with data and sync_matrix with data
+        data_matrix_no_sync[i,:] = data[start_index:start_index+Nrp]
+        data_matrix_no_sync[i,sync_clean[start_index:start_index+Nrp] < 0.0] = 0
+        data_matrix[i,:] = data[start_index:start_index+Nrp]
+        sync_matrix[i,:] = sync_clean[start_index:start_index+Nrp]
+        #plt.plot(data_matrix_no_sync[i,:])
+
+        # V2 of mean matrix
+        # Find where sync goes from negative to positive in data_matrix_no_sync
+        ind_chirp_start = np.diff(np.sign(sync_matrix[i,:]))
+        ind_chirp_start[ind_chirp_start < 0] = 0
+        ind_chirp_start = np.where(ind_chirp_start > 0)[0]
+        # For every chirp start, sum the chirp and add it to data_matrix_integrated
+        row_mat_v2 = np.zeros((len(ind_chirp_start)-2,Np))
+        for j in range(len(ind_chirp_start)-2):
+            row_mat_v2[j,:] = data_matrix_no_sync[i,ind_chirp_start[j]:ind_chirp_start[j]+Np]
+            #plt.plot(row_mat_v2[j,:])
+        row_mat_v2_mean = np.mean(row_mat_v2,axis=0)
+        data_matrix_integrated[i,:] = row_mat_v2_mean
+        print(len(ind_chirp_start)-2)
+
+        # plt.plot(row_mat_v2_mean)
+        # plt.show()
+
+        # row_mat_v2_mean = np.mean(row_mat_v2,axis=0)
+
+        # max_value = np.max(data_matrix[i,:])
+        # #plt.plot(row_mat_v2_mean)
+        # plt.plot(data_matrix_no_sync[i,:Np])
+        # plt.plot(data_matrix_integrated[i,:Np])        
+        # plt.plot(sync_matrix[i,:Np]*max_value)
+        # plt.show()
+        
+        
+    # Cut away half of the data_matrix
+    data_matrix_integrated = data_matrix_integrated[:,:data_matrix_integrated.shape[1]//2-1]
+    
     
     # Peform das hillbert transform on data_matrix_integrated
     data_matrix_integrated_hillbert = das_hillbert_transform(data_matrix_integrated,1)
 
-    # Plot first row
-    #plt.plot(data_matrix_integrated_hillbert[0,:])
+
+    # Compare data_matrix_integrated and data_matrix_integrated_hillbert
+    # for i in range(data_matrix_integrated_hillbert.shape[0]):
+    #     plt.plot(data_matrix_integrated[i,:])
+    #     plt.plot(data_matrix_integrated_hillbert[i,:])
+    #     plt.show()
+
+
     
-    # Apply han windows to row
+    
+    # Gaussian kernal 
+    #kernal = cv2.getGaussianKernel(data_matrix_integrated_hillbert.shape[1],data_matrix_integrated_hillbert.shape[1]/2) 
+    #data_matrix_integrated_hillbert[:,:] = data_matrix_integrated_hillbert[:,:]*kernal[:,0]
     data_matrix_integrated_hillbert = np.hanning(data_matrix_integrated_hillbert.shape[1])*data_matrix_integrated_hillbert
 
     # Add zero padding to data_matrix_integrated_hilbert
@@ -118,71 +163,52 @@ def main():
     
     # Apply fft along columns, fftshift along comums
     data_matrix_integrated_hillbert_fft = np.fft.fftshift(np.fft.fft(data_matrix_integrated_hillbert_padded,axis=0),axes=0)
+    # Plot phase
+    plt.imshow(np.abs(data_matrix_integrated_hillbert_fft),aspect='auto')
+    plt.show()
 
-    # Calculate K_r vector 
-    length_k_r = data_matrix_integrated_hillbert_fft.shape[1]
-    k_start = 4*np.pi*fstart/c
-    k_end = 4*np.pi*fend/c
-    K_r = np.linspace(k_start,k_end,length_k_r)
-
-    # Create K_y_matrix
-    K_y_matrix = np.sqrt(data_matrix_integrated_hillbert_fft - K_r) 
-
-    # Find min value in each row
-    ## Find min and max
-    K_ye = np.linspace(np.min(K_y_matrix),np.max(K_y_matrix),int(K_y_matrix.shape[0]/2))
     
-    # Interpolate matrix using stolzinterpolation
-    
-    
+    # Interpolate K_y_matrix using STOLT interpolation    
 def stolt_interpolation(K_y_matrix, K_ye):
     """
-    Perform Stolt interpolation on K_y_matrix.
-
-    Parameters:
-    - K_y_matrix: numpy array
-        The input K_y matrix.
-    - K_ye: numpy array
-        The K_y values at which interpolation is desired.
-
-    Returns:
-    - interpolate_matrix: numpy array
-        The result of Stolt interpolation.
+    Interpolate matrix using stolt interpolation for phased arrays
     """
-    # Initialize an array for the interpolated values
-    interpolate_matrix = np.zeros((K_y_matrix.shape[0], len(K_ye)))
-
-    # Iterate through each row of K_y_matrix and perform interpolation
-    for i in range(K_y_matrix.shape[0]):
-        # Perform linear interpolation using scipy's interp1d
-        interpolate_func = scipy.interpolate.interp1d(K_y_matrix[i, :], K_ye, kind='linear', fill_value="extrapolate")
-        interpolate_matrix[i, :] = interpolate_func(K_ye)
-
-    return interpolate_matrix
+    # Create interpolator
+    interpolator = scipy.interpolate.interp1d(K_ye, K_ye, kind='linear',fill_value="extrapolate")
+    
+    # Create new matrix
+    K_y_matrix_new = np.zeros_like(K_y_matrix)
+    for i in range(K_y_matrix.shape[1]):
+        K_y_matrix_new[:,i] = interpolator(K_y_matrix[:,i])
+    return K_y_matrix_new
     
 def das_hillbert_transform(matrix,axis,rep_nan=1e-30):
     """
     Perform hilbert transform on matrix along axis and setting nan values to 1e-3
-    """        
-    # # Peform fft on matrix along axis
-    # fft = np.fft.fft(matrix,axis=axis)
-
-    # # Save positive frequencies of fft
-    # fft = np.fft.fftshift(fft,axes=axis)
-    
-    # # Remove negative frequencies
+    """      
+    # # Calculate the FFT
+    # signal_fft = np.fft.fft(matrix,axis=axis)
+    # N = matrix.shape[axis]
     # if axis == 0:
-    #     fft = fft[int(fft.shape[0]/2):,:]
+    #     signal_fft[:N // 2,:] = 0
+    #     signal_fft[N // 2 + 1:,:] *= 2
+    # elif axis == 1:            
+    #     signal_fft[:,:N // 2] = 0
+    #     signal_fft[:,N // 2 + 1:] *= 2
     # else:
-    #     fft = fft[:,int(fft.shape[1]/2):]        
+    #     raise ValueError("Axis must be 0 or 1")
 
-    # # Replace NaN with rep_nan
-    # fft[np.isnan(fft)] = rep_nan
-
-    # return fft
+    # # Calculate the IFFT to obtain the Hilbert transform
+    # hilbert_transform = np.fft.ifft(signal_fft,axis=axis)  
     
-    # Use scipy
-    hilbert = scipy.signal.hilbert(matrix,axis=axis)
+    # # Replace nan values by rep_nan
+    # hilbert_transform[np.isnan(hilbert_transform)] = rep_nan
+    
+    # return hilbert_transform
+
+
+    analytic = scipy.signal.hilbert(matrix,axis=axis,N=matrix.shape[axis])
+    hilbert = np.imag(analytic)
     # Replace nan values by rep_nan
     hilbert[np.isnan(hilbert)] = rep_nan
     return hilbert
