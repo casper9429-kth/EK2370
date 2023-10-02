@@ -62,10 +62,10 @@ function main()
     c = 3e8;                % speed of light [m/s]
     v_c = 299792458;        % speed of light [m/s]
     Ts = 1/fs;              % sampling time [s]
-    Trp = 0.50;              % Position update time [s] Trp>0.25 (lec 5,slide 32)
+    Trp = 4.0;              % Position update time [s] Trp>0.25 (lec 5,slide 32)
     Nrp=int64(Trp*fs);        % Number of samples per position update
     Tp = 0.020;              % pulse width [s]
-    L = 1.25;                % syntetic antenna length [m]    
+    L = 1.15;                % syntetic antenna length [m]    
     Np = int64(Tp*fs)       % Number of samples per upchirp
     fc = 2.43e9;            % center frequency [hz]
     Nsamples = int64(Tp*fs);       % number of samples per puls
@@ -228,18 +228,18 @@ function main()
     end
 
     % iter over each row in data_matrix_no_sync
-    for i=1:nr_pos
-        max_val = max(data_matrix_no_sync(i,:));
-        plot(data_matrix_no_sync(i,:)./max_val)
-        hold on
-        plot(sync_matrix(i,:))
-        % Add label
-        xlabel('Sample')
-        ylabel('Normalized Amplitude')
-        hold off
-        saveas(gcf,strcat(folder,'/SAR_MES_22_data_and_sync_matrix_row_',num2str(i),'.png'))
-        pause(0.5)
-    end
+    % for i=1:nr_pos
+    %     max_val = max(data_matrix_no_sync(i,:));
+    %     plot(data_matrix_no_sync(i,:)./max_val)
+    %     hold on
+    %     plot(sync_matrix(i,:))
+    %     % Add label
+    %     xlabel('Sample')
+    %     ylabel('Normalized Amplitude')
+    %     hold off
+    %     saveas(gcf,strcat(folder,'/SAR_MES_22_data_and_sync_matrix_row_',num2str(i),'.png'))
+    %     pause(0.5)
+    % end
 
 
     % Plot data_matrix_integrated_hilbert
@@ -378,10 +378,10 @@ function main()
     data_matrix_interp_ifft(abs(data_matrix_interp_ifft) < precentile_min) = precentile_min;
 
     % Plot log(abs(data_matrix_interp_ifft_rotated_flipped_cutout))
-    % imagesc(c_range_1:c_range_2,-d_range_2:-d_range_1,log(abs(fliplr(rot90(data_matrix_interp_ifft,2)))))
-    % % Add axis labels
-    % xlabel('Cross Range [m]')
-    % ylabel('Down Range [m]')    
+    imagesc(c_range_1:c_range_2,-d_range_2:-d_range_1,log(abs(fliplr(rot90(data_matrix_interp_ifft,2)))))
+    % Add axis labels
+    xlabel('Cross Range [m]')
+    ylabel('Down Range [m]')    
 
 
 end

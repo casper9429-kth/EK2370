@@ -1,7 +1,7 @@
 # Author: Casper Augustsson
 # Transforms m4a file to data, sync and fs and saves it as a .mat file to be used in Matlab for further processing
 # Enter path to m4a file in path variable. Must be a m4a file with two channels, one for data and one for sync
-path = "SAR/SAR_measurement2.m4a"
+path = "SAR/SAR_measurement.m4a"
 
 from pydub import AudioSegment
 from pydub.utils import mediainfo
