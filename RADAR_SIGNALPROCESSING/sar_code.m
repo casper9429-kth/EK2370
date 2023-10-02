@@ -65,7 +65,7 @@ function main()
     Trp = 3.00;              % Position update time [s] Trp>0.25 (lec 5,slide 32)
     Nrp=int64(Trp*fs);        % Number of samples per position update
     Tp = 0.020;              % pulse width [s]
-    L = 1.2;%5;                % syntetic antenna length [m]    
+    L = 1.25;                % syntetic antenna length [m]    
     Np = int64(Tp*fs)       % Number of samples per upchirp
     fc = 2.43e9;            % center frequency [hz]
     Nsamples = int64(Tp*fs);       % number of samples per puls
@@ -76,8 +76,10 @@ function main()
     % Get folder of this script path
     path = mfilename('fullpath');
     [folder, name, ext] = fileparts(path)
+
     % path to data folder
     path_data = strcat(folder,'/data_sync_fs/');
+
     % Check if path_data exists
     if ~exist(path_data, 'dir')
         error('Path to data folder does not exist, runt generate_data_sync_fs.py')
@@ -320,7 +322,7 @@ function main()
     down_range_vector = down_range_vector.^2;
 
     % Multiply with down_range_vector on all columns
-    data_matrix_interp_ifft = data_matrix_interp_ifft.*down_range_vector';
+    %data_matrix_interp_ifft = data_matrix_interp_ifft.*down_range_vector';
 
 
     % Fallten data_matrix_interp_ifft
@@ -334,7 +336,7 @@ function main()
 
 
     % Set all values in data_matrix_interp_ifft that is less than precentile_min to precentile_mi
-    data_matrix_interp_ifft(abs(data_matrix_interp_ifft)>precentile_max) = precentile_max;
+    data_matrix_interp_ifft(abs(data_matrix_interp_ifft)>precentile_max)   = precentile_max;
     data_matrix_interp_ifft(abs(data_matrix_interp_ifft) < precentile_min) = precentile_min;
 
     % Plot log(abs(data_matrix_interp_ifft_rotated_flipped_cutout))
