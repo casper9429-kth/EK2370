@@ -42,10 +42,11 @@ allpositionsyncs = zeros(size(newpositions,1),0.5*sampleRate);
 for i = 1:size(positionchanges,1)
 if i ~= size(positionchanges,1)
     allpositionsignals(i, :) = audioData(positionchanges(i)+0.5*sampleRate:positionchanges(i)+sampleRate-1,1);    
-    allpositionsyncs(i,:) = sync(positionchanges(i)+0.5*sampleRate:positionchanges(i)+sampleRate-1);
+    allpositionsyncs(i,:) = syncsign(positionchanges(i)+0.5*sampleRate:positionchanges(i)+sampleRate-1);
 end
-
-
+end
+for i = 1:size(allpositionsignals,1)
+    allpositionsignals(i,:) = allpositionsginals(i,find(allpositionsyncs(i,:) == 1))
 
 end
 
