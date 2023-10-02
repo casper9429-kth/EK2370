@@ -62,10 +62,10 @@ function main()
     c = 3e8;                % speed of light [m/s]
     v_c = 299792458;        % speed of light [m/s]
     Ts = 1/fs;              % sampling time [s]
-    Trp = 2.0;              % Position update time [s] Trp>0.25 (lec 5,slide 32)
+    Trp = 3.00;              % Position update time [s] Trp>0.25 (lec 5,slide 32)
     Nrp=int64(Trp*fs);        % Number of samples per position update
     Tp = 0.020;              % pulse width [s]
-    L = 1.2;                % syntetic antenna length [m]    
+    L = 1.2;%5;                % syntetic antenna length [m]    
     Np = int64(Tp*fs)       % Number of samples per upchirp
     fc = 2.43e9;            % center frequency [hz]
     Nsamples = int64(Tp*fs);       % number of samples per puls
@@ -181,15 +181,15 @@ function main()
             start_save_index = arg_up_chirp_start(j);
             % Check if start_save_index + Np - 1 is larger than data_matrix_no_sync
             chirp_matrix(j,:) = data_matrix_no_sync(i,start_save_index:start_save_index + Np -1);
-            %plot(chirp_matrix(j,:))
-            %hold on
+            % plot(chirp_matrix(j,:))
+            % hold on
         end
         % Create mean along columns
         chirp_matrix_mean = mean(chirp_matrix,1);
         data_matrix_integrated(i,:) = chirp_matrix_mean;
-        %plot(chirp_matrix_mean)
-        %hold off
-        %pause(0.5)
+        % plot(chirp_matrix_mean)
+        % hold off
+        % pause(0.5)
     end
 
 
@@ -328,13 +328,20 @@ function main()
     
     % Find a precentile of the data_matrix_interp_ifft_flattened
     precentile_min = prctile(data_matrix_interp_ifft_flattened,50);
+    precentile_max = prctile(data_matrix_interp_ifft_flattened,100);
+
     %precentile_max = prctile(data_matrix_interp_ifft_flattened,99.9);
 
+
     % Set all values in data_matrix_interp_ifft that is less than precentile_min to precentile_mi
+    data_matrix_interp_ifft(abs(data_matrix_interp_ifft)>precentile_max) = precentile_max;
     data_matrix_interp_ifft(abs(data_matrix_interp_ifft) < precentile_min) = precentile_min;
 
     % Plot log(abs(data_matrix_interp_ifft_rotated_flipped_cutout))
-    imagesc(c_range_1:c_range_2,d_range_1:d_range_2,log(abs(data_matrix_interp_ifft)))
+    imagesc(c_range_1:c_range_2,-d_range_2:-d_range_1,log(abs(fliplr(rot90(data_matrix_interp_ifft,2)))))
+    % Add axis labels
+    xlabel('Cross Range [m]')
+    ylabel('Down Range [m]')    
 
 
 end
