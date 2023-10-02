@@ -119,6 +119,14 @@ function main()
     % Extract position indicies
     pos_indicies = extract_pos_indicies(zero_crossings);
 
+
+    % Plot chirp with axis sample and normalized amplitude
+    % plot(data)
+    % xlabel('Sample')
+    % ylabel('Amplitude')
+    % hold off
+
+
     % Plot pos_indicies 
     % zero = zeros(size(sync));
     % zero(pos_indicies) = 1;
@@ -183,15 +191,30 @@ function main()
             start_save_index = arg_up_chirp_start(j);
             % Check if start_save_index + Np - 1 is larger than data_matrix_no_sync
             chirp_matrix(j,:) = data_matrix_no_sync(i,start_save_index:start_save_index + Np -1);
+            
             % plot(chirp_matrix(j,:))
             % hold on
         end
         % Create mean along columns
         chirp_matrix_mean = mean(chirp_matrix,1);
         data_matrix_integrated(i,:) = chirp_matrix_mean;
+
         % plot(chirp_matrix_mean)
+        % xlabel('Sample')
+        % ylabel('Amplitude')
+        % saveas(gcf,strcat(folder,'/SAR_MES_2_chirp_matrix_all_chirps_per_pos_',num2str(i),'.png'))
+
         % hold off
         % pause(0.5)
+
+
+        % Save plot of chirp_matrix_mean
+        % plot(chirp_matrix_mean)
+        % xlabel('Sample')
+        % ylabel('Amplitude')
+        % saveas(gcf,strcat(folder,'/SAR_MES_2_chirp_matrix_mean_',num2str(i),'.png'))
+
+
     end
 
 
@@ -203,6 +226,21 @@ function main()
     for i = 1:nr_pos
         data_matrix_integrated_hilbert(i,:) = hilbert_transform(data_matrix_integrated(i,:));
     end
+
+    % iter over each row in data_matrix_no_sync
+    for i=1:nr_pos
+        max_val = max(data_matrix_no_sync(i,:));
+        plot(data_matrix_no_sync(i,:)./max_val)
+        hold on
+        plot(sync_matrix(i,:))
+        % Add label
+        xlabel('Sample')
+        ylabel('Normalized Amplitude')
+        hold off
+        saveas(gcf,strcat(folder,'/SAR_MES_2_data_and_sync_matrix_row_',num2str(i),'.png'))
+        pause(0.5)
+    end
+
 
     % Plot data_matrix_integrated_hilbert
     % for i = 1:nr_pos
@@ -340,10 +378,10 @@ function main()
     data_matrix_interp_ifft(abs(data_matrix_interp_ifft) < precentile_min) = precentile_min;
 
     % Plot log(abs(data_matrix_interp_ifft_rotated_flipped_cutout))
-    imagesc(c_range_1:c_range_2,-d_range_2:-d_range_1,log(abs(fliplr(rot90(data_matrix_interp_ifft,2)))))
-    % Add axis labels
-    xlabel('Cross Range [m]')
-    ylabel('Down Range [m]')    
+    % imagesc(c_range_1:c_range_2,-d_range_2:-d_range_1,log(abs(fliplr(rot90(data_matrix_interp_ifft,2)))))
+    % % Add axis labels
+    % xlabel('Cross Range [m]')
+    % ylabel('Down Range [m]')    
 
 
 end
