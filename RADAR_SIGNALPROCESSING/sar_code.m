@@ -62,7 +62,7 @@ function main()
     c = 3e8;                % speed of light [m/s]
     v_c = 299792458;        % speed of light [m/s]
     Ts = 1/fs;              % sampling time [s]
-    Trp = 3.00;              % Position update time [s] Trp>0.25 (lec 5,slide 32)
+    Trp = 0.50;              % Position update time [s] Trp>0.25 (lec 5,slide 32)
     Nrp=int64(Trp*fs);        % Number of samples per position update
     Tp = 0.020;              % pulse width [s]
     L = 1.25;                % syntetic antenna length [m]    
@@ -237,7 +237,7 @@ function main()
         xlabel('Sample')
         ylabel('Normalized Amplitude')
         hold off
-        saveas(gcf,strcat(folder,'/SAR_MES_2_data_and_sync_matrix_row_',num2str(i),'.png'))
+        saveas(gcf,strcat(folder,'/SAR_MES_22_data_and_sync_matrix_row_',num2str(i),'.png'))
         pause(0.5)
     end
 
