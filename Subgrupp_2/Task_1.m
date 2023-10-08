@@ -1,8 +1,9 @@
     % Define the file path to your audio file
-filePath = 'superreflect.m4a';
+filePath = '/home/casper/repos/EK2370/Subgrupp_2/test_cw_sdr_1';
 
 % Read the audio file and get the audio data and sampling rate
 [audioData, sampleRate] = audioread(filePath);
+print(size(audioData))
 
 % Get the number of samples in the audio data
 audioData_inv = audioData(:,1)*(-1);
@@ -47,22 +48,22 @@ figure(1)
 imagesc(velocities, timearray, fftfirst1,[-10 0])
 xlim([0 30])
 %Norm3
-figure(2)
+% figure(2)
 %[maxrows,i] = maxk(fftfirst,2,2);
-for i = 1:size(fftfirst,1)
-    [peaks,ind] = findpeaks(fftfirst(i,:));
-    [peakss,inds] = sort(peaks);
-    %fftfirstloop = fftfirst(i,:) - peakss(end);
-    fftfirst(i,:) = fftfirst(i,:) - peakss(end-1);
-    %fftfirst(i,inds(end-60)) = 0;
+% for i = 1:size(fftfirst,1)
+%     [peaks,ind] = findpeaks(fftfirst(i,:));
+%     [peakss,inds] = sort(peaks);
+%     %fftfirstloop = fftfirst(i,:) - peakss(end);
+%     fftfirst(i,:) = fftfirst(i,:) - peakss(end-1);
+%     %fftfirst(i,inds(end-60)) = 0;
     
-    %fftfirst(i,:) = fftfirstloop + fftfirstloop2;
+%     %fftfirst(i,:) = fftfirstloop + fftfirstloop2;
     
-end
-%fftfirst = fftfirst - maxrows(:,2);
-imgaussfilt(fftfirst,100);
-imagesc(velocities, timearray, fftfirst,[-1 0])
-xlim([0 30])
+% end
+% %fftfirst = fftfirst - maxrows(:,2);
+% imgaussfilt(fftfirst,100);
+% imagesc(velocities, timearray, fftfirst,[-1 0])
+% xlim([0 30])
 
 
 
