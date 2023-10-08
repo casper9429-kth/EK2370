@@ -1,4 +1,4 @@
-    % Define the file path to your audio file
+% Define the file path to your audio file
 filePath = '/home/casper/repos/EK2370/Subgrupp_2/test_cw_sdr_1';
 
 % Read the audio file and get the audio data and sampling rate
